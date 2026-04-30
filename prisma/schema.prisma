@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  email     String   @unique
-  password  String
-  credits   Int      @default(1000)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  memes     Meme[]
-  bets      Bet[]
+  id           String        @id @default(cuid())
+  username     String        @unique
+  email        String        @unique
+  password     String
+  credits      Int           @default(1000)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  memes        Meme[]
+  bets         Bet[]
+  transactions Transaction[]
 }
 
 model Meme {
@@ -64,4 +65,16 @@ model Bet {
   createdAt DateTime @default(now())
 
   @@unique([userId, marketId])
+}
+
+model Transaction {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  credits    Int
+  amountUsd  Float
+  provider   String
+  externalId String   @unique
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
 }

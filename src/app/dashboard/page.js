@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { CREDIT_PACKS } from '@/lib/packs'
 
 function tiempoRestante(d) {
   const ms = new Date(d) - new Date()
@@ -205,15 +206,49 @@ function ResolveModal({ market, onClose, onResolve, loading }) {
   )
 }
 
-// ── Buy credits modal ──────────────────────────────────────────────────────────
-const PACKS = [
-  { label: 'STARTER', credits: 500, price: 'USD $1', bonus: null, color: 'var(--muted)' },
-  { label: 'PRO', credits: 3000, price: 'USD $5', bonus: '+20% BONUS', color: 'var(--lime)' },
-  { label: 'WHALE', credits: 15000, price: 'USD $20', bonus: '+50% BONUS', color: 'var(--gold)' },
-  { label: 'SHARK', credits: 50000, price: 'USD $60', bonus: '+100% BONUS', color: '#ff6600' },
-]
-
+// ── Buy credits modal (funcional) ─────────────────────────────────────────────
 function BuyCreditsModal({ onClose }) {
+  const [tab, setTab] = useState('mp')
+  const [loadingPack, setLoadingPack] = useState(null)
+  const [err, setErr] = useState('')
+
+  const pagar = async (packId) => {
+    setLoadingPack(packId); setErr('')
+    try {
+      const endpoint = tab === 'mp'
+        ? '/api/payments/mp/create'
+        : '/api/payments/crypto/create'
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packId }),
+      })
+      const data = await res.json()
+      if (res.ok && data.url) {
+        window.location.href = data.url
+      } else {
+        setErr(data.error || 'Error al procesar el pago')
+      }
+    } catch {
+      setErr('Error de conexión. Intentá de nuevo.')
+    } finally {
+      setLoadingPack(null)
+    }
+  }
+
+  const tabBtn = (id, label) => (
+    <button onClick={() => setTab(id)} style={{
+      flex: 1, padding: '10px', border: 'none',
+      background: tab === id ? 'var(--surface)' : 'transparent',
+      color: tab === id ? '#fff' : 'var(--muted)',
+      fontFamily: 'JetBrains Mono', fontSize: '11px', fontWeight: 700,
+      letterSpacing: '0.5px', cursor: 'crosshair', borderRadius: '6px',
+      transition: 'all 0.15s',
+    }}>
+      {label}
+    </button>
+  )
+
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)',
@@ -222,54 +257,97 @@ function BuyCreditsModal({ onClose }) {
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         background: 'var(--surface)', border: '1px solid var(--border2)',
-        borderRadius: '16px', padding: '32px', maxWidth: '500px', width: '100%',
+        borderRadius: '16px', padding: '28px', maxWidth: '520px', width: '100%',
+        maxHeight: '90vh', overflowY: 'auto',
       }}>
-        <div style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: 'var(--gold)', letterSpacing: '2px', marginBottom: '8px' }}>
+        <div style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: 'var(--gold)', letterSpacing: '2px', marginBottom: '6px' }}>
           ◈ COMPRAR CRÉDITOS
         </div>
-        <h2 style={{ fontFamily: 'Bebas Neue', fontSize: '36px', letterSpacing: '2px', marginBottom: '4px' }}>
+        <h2 style={{ fontFamily: 'Bebas Neue', fontSize: '34px', letterSpacing: '2px', marginBottom: '4px' }}>
           CARGÁ TU CUENTA
         </h2>
-        <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '24px' }}>
-          Los créditos nunca expiran. Apostá cuando quieras.
+        <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '20px' }}>
+          Los créditos nunca expiran. 2% de fee del mercado vuelve al pozo.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '20px' }}>
-          {PACKS.map(p => (
-            <div key={p.label} style={{
+        {/* Tabs */}
+        <div style={{
+          display: 'flex', background: 'var(--surface2)',
+          border: '1px solid var(--border)', borderRadius: '8px',
+          padding: '4px', marginBottom: '20px', gap: '4px',
+        }}>
+          {tabBtn('mp', '💳 MercadoPago')}
+          {tabBtn('crypto', '🔐 Crypto (USDT/USDC)')}
+        </div>
+
+        {tab === 'mp' && (
+          <p style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: 'var(--muted)', marginBottom: '14px', lineHeight: 1.6 }}>
+            Pagá con tarjeta de débito, crédito o transferencia en Argentina, México, Brasil, Colombia, Chile y 13 países más.
+          </p>
+        )}
+        {tab === 'crypto' && (
+          <p style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: 'var(--muted)', marginBottom: '14px', lineHeight: 1.6 }}>
+            USDT, USDC, BTC, ETH y 300+ monedas. Sin fronteras. Confirmación en ~10 minutos.
+          </p>
+        )}
+
+        {err && (
+          <div style={{
+            background: 'var(--red-dim)', border: '1px solid rgba(255,45,85,0.3)',
+            color: 'var(--red)', padding: '10px 14px', borderRadius: '8px',
+            fontFamily: 'JetBrains Mono', fontSize: '12px', marginBottom: '14px',
+          }}>
+            ⚠ {err}
+          </div>
+        )}
+
+        {/* Packs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+          {CREDIT_PACKS.map(p => (
+            <div key={p.id} style={{
               background: 'var(--surface2)', border: '1px solid var(--border2)',
-              borderRadius: '10px', padding: '16px', textAlign: 'center',
-              opacity: 0.75, position: 'relative',
+              borderRadius: '10px', padding: '14px 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
             }}>
-              {p.bonus && (
-                <div style={{ fontFamily: 'JetBrains Mono', fontSize: '9px', color: p.color, fontWeight: 700, marginBottom: '6px', letterSpacing: '1px' }}>
-                  {p.bonus}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                    <span style={{ fontFamily: 'Bebas Neue', fontSize: '18px', letterSpacing: '1px', color: p.color }}>
+                      {p.label}
+                    </span>
+                    {p.bonus && (
+                      <span style={{ fontFamily: 'JetBrains Mono', fontSize: '9px', color: p.color, fontWeight: 700, background: `${p.color}18`, padding: '2px 6px', borderRadius: '4px' }}>
+                        {p.bonus}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontFamily: 'JetBrains Mono', fontSize: '13px', fontWeight: 700, color: '#fff' }}>
+                    ◈ {p.credits.toLocaleString()} créditos
+                  </div>
                 </div>
-              )}
-              <div style={{ fontFamily: 'Bebas Neue', fontSize: '20px', letterSpacing: '1px', color: p.color }}>
-                {p.label}
               </div>
-              <div style={{ fontFamily: 'JetBrains Mono', fontSize: '18px', fontWeight: 700, color: '#fff', margin: '4px 0' }}>
-                ◈ {p.credits.toLocaleString()}
-              </div>
-              <div style={{ fontFamily: 'JetBrains Mono', fontSize: '12px', color: 'var(--muted)' }}>
-                {p.price}
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontFamily: 'JetBrains Mono', fontSize: '14px', fontWeight: 700, color: 'var(--gold)', marginBottom: '6px' }}>
+                  USD ${p.priceUsd}
+                </div>
+                <button
+                  onClick={() => pagar(p.id)}
+                  disabled={loadingPack !== null}
+                  style={{
+                    background: loadingPack === p.id ? 'var(--border2)' : 'var(--lime)',
+                    color: '#000', fontFamily: 'JetBrains Mono', fontWeight: 700,
+                    fontSize: '11px', padding: '7px 14px', borderRadius: '6px',
+                    border: 'none', cursor: loadingPack !== null ? 'not-allowed' : 'crosshair',
+                    letterSpacing: '0.3px', transition: 'opacity 0.15s',
+                    opacity: loadingPack !== null && loadingPack !== p.id ? 0.4 : 1,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {loadingPack === p.id ? 'REDIRIGIENDO...' : 'PAGAR →'}
+                </button>
               </div>
             </div>
           ))}
-        </div>
-
-        <div style={{
-          background: 'rgba(255,214,10,0.07)', border: '1px solid rgba(255,214,10,0.2)',
-          borderRadius: '10px', padding: '16px', textAlign: 'center', marginBottom: '16px',
-        }}>
-          <div style={{ fontFamily: 'JetBrains Mono', fontSize: '12px', color: 'var(--gold)', fontWeight: 700, marginBottom: '6px' }}>
-            🚀 PRÓXIMAMENTE
-          </div>
-          <p style={{ fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted)', lineHeight: 1.6 }}>
-            Integración con Mercado Pago, Stripe y PayPal en camino.
-            <br />Escribinos a <span style={{ color: 'var(--lime)' }}>hola@memeo.gg</span> para acceso anticipado.
-          </p>
         </div>
 
         <button onClick={onClose} style={{
@@ -313,12 +391,30 @@ export default function Dashboard() {
   const [msg, setMsg] = useState('')
   const router = useRouter()
 
+  const params = useSearchParams()
+
   const cargar = () =>
     fetch('/api/user/stats')
       .then(r => { if (r.status === 401) { router.push('/login'); return null } return r.json() })
       .then(d => d && setData(d))
 
   useEffect(() => { cargar() }, [])
+
+  useEffect(() => {
+    const pago = params.get('pago')
+    const cr = params.get('cr')
+    if (pago === 'ok') {
+      setMsg(cr ? `✅ Pago confirmado — ◈ ${parseInt(cr).toLocaleString()} créditos acreditados` : '✅ Pago recibido, créditos en camino')
+      cargar()
+      setTimeout(() => setMsg(''), 6000)
+    } else if (pago === 'error') {
+      setMsg('⚠ El pago no fue procesado. Intentá de nuevo.')
+      setTimeout(() => setMsg(''), 5000)
+    } else if (pago === 'pendiente') {
+      setMsg('⏳ Pago pendiente — te avisaremos cuando se acredite')
+      setTimeout(() => setMsg(''), 6000)
+    }
+  }, [params])
 
   const resolver = async (result) => {
     if (!resolveTarget) return
