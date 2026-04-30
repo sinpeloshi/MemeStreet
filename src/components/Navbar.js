@@ -57,14 +57,15 @@ export default function Navbar() {
                   <span className="nav-launch-short">+</span>
                 </Link>
 
-                <div className="nav-credits">
-                  <span style={{ color: 'var(--gold)', fontSize: '13px' }}>◈</span>
-                  <span style={{ fontFamily: 'JetBrains Mono', fontSize: '13px', fontWeight: 700, color: 'var(--gold)' }}>
-                    {user.credits.toLocaleString()}
-                  </span>
-                </div>
-
-                <span className="nav-username">@{user.username}</span>
+                <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+                  <div className="nav-credits">
+                    <span style={{ color: 'var(--gold)', fontSize: '13px' }}>◈</span>
+                    <span style={{ fontFamily: 'JetBrains Mono', fontSize: '13px', fontWeight: 700, color: 'var(--gold)' }}>
+                      {user.credits.toLocaleString()}
+                    </span>
+                  </div>
+                  <span className="nav-username">@{user.username}</span>
+                </Link>
 
                 <button onClick={logout} className="nav-exit">SALIR</button>
               </>

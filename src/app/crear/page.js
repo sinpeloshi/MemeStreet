@@ -11,14 +11,20 @@ export default function CrearPage() {
 
   const submit = async () => {
     setLoading(true); setError('')
-    const res = await fetch('/api/memes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, tags: form.tags.split(',').map(t => t.trim()).filter(Boolean), threshold: parseInt(form.threshold) }),
-    })
-    const data = await res.json()
-    if (!res.ok) { setError(data.error); setLoading(false); return }
-    router.push(`/market/${data.market.id}`)
+    try {
+      const res = await fetch('/api/memes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, tags: form.tags.split(',').map(t => t.trim()).filter(Boolean), threshold: parseInt(form.threshold) }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Error al crear el mercado'); return }
+      router.push(`/market/${data.market.id}`)
+    } catch {
+      setError('Error de conexión. Intentá de nuevo.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const panel = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', marginBottom: '14px' }

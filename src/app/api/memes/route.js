@@ -19,6 +19,12 @@ export async function POST(request) {
     if (!title || !imageUrl || !question || !threshold || !platform || !deadline)
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
 
+    if (new Date(deadline) <= new Date())
+      return NextResponse.json({ error: 'La fecha límite debe ser en el futuro' }, { status: 400 })
+
+    if (parseInt(threshold) <= 0)
+      return NextResponse.json({ error: 'El umbral debe ser mayor a cero' }, { status: 400 })
+
     const meme = await prisma.meme.create({
       data: {
         title, imageUrl, tags: tags || [],
