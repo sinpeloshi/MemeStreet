@@ -72,7 +72,7 @@ export default function MarketPage() {
         ← VOLVER A MERCADOS
       </Link>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
+      <div className="market-layout">
 
         {/* LEFT */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -120,7 +120,7 @@ export default function MarketPage() {
                 <div style={{ width: `${yesP}%`, height: '100%', background: 'linear-gradient(90deg, var(--lime), #7fff00)', borderRadius: '4px', boxShadow: '0 0 12px rgba(181,255,0,0.4)' }} />
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+            <div className="market-stats-grid">
               {[
                 { l: 'POZO TOTAL', v: `◈${total.toLocaleString()}`, c: 'var(--gold)' },
                 { l: 'APUESTAS', v: market.bets.length, c: '#fff' },
@@ -156,8 +156,8 @@ export default function MarketPage() {
           )}
         </div>
 
-        {/* RIGHT */}
-        <div style={{ position: 'sticky', top: '90px' }}>
+        {/* RIGHT — Bet panel */}
+        <div className="market-bet-sticky">
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
             {!isOpen ? (
               <div style={{ padding: '40px 24px', textAlign: 'center' }}>
