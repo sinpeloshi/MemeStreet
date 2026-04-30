@@ -74,7 +74,7 @@ export default function MarketPage() {
         ← BACK TO MARKETS
       </Link>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
+      <div className="market-layout">
 
         {/* LEFT */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -151,7 +151,7 @@ export default function MarketPage() {
             </div>
 
             {/* Grid stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+            <div className="market-stats-grid">
               {[
                 { l: 'TOTAL POOL', v: `◈${total.toLocaleString()}`, c: 'var(--gold)' },
                 { l: 'BETS', v: market.bets.length, c: '#fff' },
@@ -207,7 +207,7 @@ export default function MarketPage() {
         </div>
 
         {/* RIGHT — Bet panel */}
-        <div style={{ position: 'sticky', top: '90px' }}>
+        <div className="market-bet-sticky">
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
 
             {!isOpen ? (

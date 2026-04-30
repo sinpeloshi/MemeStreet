@@ -47,7 +47,6 @@ export default function Navbar() {
           fontSize: '11px',
           fontWeight: 700,
           letterSpacing: '0.5px',
-          gap: 0,
         }}>
           {tickerText}
         </div>
@@ -58,128 +57,43 @@ export default function Navbar() {
         background: 'rgba(3,3,3,0.96)',
         backdropFilter: 'blur(16px)',
         borderBottom: '1px solid var(--border)',
-        padding: '0 20px',
       }}>
-        <div style={{
-          maxWidth: '1140px',
-          margin: '0 auto',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          height: '54px',
-        }}>
+        <div className="nav-inner">
+
           {/* Logo */}
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '22px' }}>🔥</span>
-            <div>
-              <div style={{
-                fontFamily: 'Bebas Neue',
-                fontSize: '26px',
-                letterSpacing: '2px',
-                color: 'var(--lime)',
-                lineHeight: 1,
-                textShadow: '0 0 20px rgba(181,255,0,0.35)',
-              }}>
-                MEMEO
-              </div>
-              <div style={{
-                fontFamily: 'JetBrains Mono',
-                fontSize: '8px',
-                color: 'var(--muted)',
-                letterSpacing: '1.5px',
-                lineHeight: 1,
-              }}>
-                MEME ECONOMY™
-              </div>
-            </div>
+          <Link href="/" className="nav-logo">
+            <span className="logo-me">ME</span>
+            <span className="logo-meo">MEO</span>
           </Link>
 
           {/* Right */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="nav-right">
             {user ? (
               <>
-                <Link href="/create" className="btn-lime" style={{
-                  padding: '8px 16px',
-                  borderRadius: '7px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '13px',
-                }}>
-                  <span>+</span> LAUNCH MEME
+                <Link href="/create" className="btn-lime nav-launch">
+                  <span className="nav-launch-full">+ LAUNCH MEME</span>
+                  <span className="nav-launch-short">+</span>
                 </Link>
 
-                <div style={{
-                  background: 'var(--surface2)',
-                  border: '1px solid var(--border2)',
-                  borderRadius: '7px',
-                  padding: '7px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}>
+                <div className="nav-credits">
                   <span style={{ color: 'var(--gold)', fontSize: '13px' }}>◈</span>
-                  <span style={{
-                    fontFamily: 'JetBrains Mono',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    color: 'var(--gold)',
-                  }}>
+                  <span style={{ fontFamily: 'JetBrains Mono', fontSize: '13px', fontWeight: 700, color: 'var(--gold)' }}>
                     {user.credits.toLocaleString()}
                   </span>
                 </div>
 
-                <span style={{
-                  fontFamily: 'JetBrains Mono',
-                  fontSize: '11px',
-                  color: 'var(--muted)',
-                }}>
-                  @{user.username}
-                </span>
+                <span className="nav-username">@{user.username}</span>
 
-                <button onClick={logout} style={{
-                  background: 'none',
-                  border: '1px solid var(--border2)',
-                  color: 'var(--muted)',
-                  fontSize: '11px',
-                  fontFamily: 'JetBrains Mono',
-                  padding: '7px 10px',
-                  borderRadius: '7px',
-                  cursor: 'crosshair',
-                  transition: 'color 0.15s',
-                }}>
-                  EXIT
-                </button>
+                <button onClick={logout} className="nav-exit">EXIT</button>
               </>
             ) : (
               <>
-                <Link href="/login" style={{
-                  fontFamily: 'JetBrains Mono',
-                  fontSize: '12px',
-                  color: 'var(--muted)',
-                  padding: '8px 12px',
-                  letterSpacing: '0.5px',
-                  transition: 'color 0.15s',
-                }}>
-                  LOGIN
-                </Link>
-                <Link href="/register" style={{
-                  background: 'transparent',
-                  border: '1px solid var(--lime)',
-                  color: 'var(--lime)',
-                  fontFamily: 'JetBrains Mono',
-                  fontWeight: 600,
-                  fontSize: '12px',
-                  padding: '8px 14px',
-                  borderRadius: '7px',
-                  letterSpacing: '0.5px',
-                  transition: 'background 0.15s',
-                }}>
-                  REGISTER
-                </Link>
+                <Link href="/login" className="nav-login">LOGIN</Link>
+                <Link href="/register" className="nav-register">REGISTER</Link>
               </>
             )}
           </div>
+
         </div>
       </nav>
     </div>
