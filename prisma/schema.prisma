@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  credits   Int      @default(1000)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  memes     Meme[]
+  bets      Bet[]
+}
+
+model Meme {
+  id        String   @id @default(cuid())
+  title     String
+  imageUrl  String
+  tags      String[]
+  creatorId String
+  creator   User     @relation(fields: [creatorId], references: [id])
+  market    Market?
+  createdAt DateTime @default(now())
+}
+
+model Market {
+  id        String       @id @default(cuid())
+  memeId    String       @unique
+  meme      Meme         @relation(fields: [memeId], references: [id])
+  question  String
+  threshold Int
+  platform  String
+  deadline  DateTime
+  status    MarketStatus @default(OPEN)
+  result    Boolean?
+  totalYes  Int          @default(0)
+  totalNo   Int          @default(0)
+  bets      Bet[]
+  createdAt DateTime     @default(now())
+}
+
+enum MarketStatus {
+  OPEN
+  RESOLVED
+  CANCELLED
+}
+
+model Bet {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  marketId  String
+  market    Market   @relation(fields: [marketId], references: [id])
+  position  Boolean
+  amount    Int
+  payout    Int?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, marketId])
+}
