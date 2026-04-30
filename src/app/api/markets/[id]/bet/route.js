@@ -16,26 +16,33 @@ export async function POST(request, { params }) {
       prisma.user.findUnique({ where: { id: auth.id } })
     ])
 
-    if (!market) return NextResponse.json({ error: 'Market no existe' }, { status: 404 })
-    if (market.status !== 'OPEN') return NextResponse.json({ error: 'Market cerrado' }, { status: 400 })
-    if (new Date() > market.deadline) return NextResponse.json({ error: 'Market expirado' }, { status: 400 })
+    if (!market) return NextResponse.json({ error: 'Mercado no existe' }, { status: 404 })
+    if (market.status !== 'OPEN') return NextResponse.json({ error: 'Mercado cerrado' }, { status: 400 })
+    if (new Date() > market.deadline) return NextResponse.json({ error: 'Mercado expirado' }, { status: 400 })
     if (user.credits < amount) return NextResponse.json({ error: 'Créditos insuficientes' }, { status: 400 })
 
     const existing = await prisma.bet.findUnique({
       where: { userId_marketId: { userId: auth.id, marketId: params.id } }
     })
-    if (existing) return NextResponse.json({ error: 'Ya apostaste en este market' }, { status: 400 })
+    if (existing) return NextResponse.json({ error: 'Ya apostaste en este mercado' }, { status: 400 })
 
-    const [bet, updatedUser] = await prisma.$transaction([
-      prisma.bet.create({ data: { userId: auth.id, marketId: params.id, position, amount } }),
-      prisma.user.update({ where: { id: auth.id }, data: { credits: { decrement: amount } } }),
-      prisma.market.update({
+    // BUG FIX: transacción correcta con resultado desestructurado bien
+    const result = await prisma.$transaction(async (tx) => {
+      const bet = await tx.bet.create({
+        data: { userId: auth.id, marketId: params.id, position, amount }
+      })
+      const updatedUser = await tx.user.update({
+        where: { id: auth.id },
+        data: { credits: { decrement: amount } }
+      })
+      await tx.market.update({
         where: { id: params.id },
         data: position ? { totalYes: { increment: amount } } : { totalNo: { increment: amount } }
       })
-    ])
+      return { bet, newCredits: updatedUser.credits }
+    })
 
-    return NextResponse.json({ bet, newCredits: updatedUser.credits })
+    return NextResponse.json(result)
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: 'Error procesando apuesta' }, { status: 500 })
