@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -21,6 +21,10 @@ export default function MarketPage() {
   const [pos, setPos] = useState(null)
   const [betting, setBetting] = useState(false)
   const [msg, setMsg] = useState({ t: '', v: '' })
+  const [autoResolving, setAutoResolving] = useState(false)
+  const [autoResolveError, setAutoResolveError] = useState('')
+  const [tweetMetrics, setTweetMetrics] = useState(null)
+  const autoResolveTried = useRef(false)
   const router = useRouter()
 
   const load = () => Promise.all([
@@ -30,20 +34,51 @@ export default function MarketPage() {
 
   useEffect(() => { load() }, [id])
 
+  // Auto-resolve trigger: fires once when market is expired+open with a tweetId
+  useEffect(() => {
+    if (!market || market.error || autoResolveTried.current) return
+    if (market.status !== 'OPEN') return
+    if (new Date() <= new Date(market.deadline)) return
+    if (!market.tweetId) return
+
+    autoResolveTried.current = true
+    setAutoResolving(true)
+    setAutoResolveError('')
+
+    fetch(`/api/markets/${id}/auto-resolve`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.metrics) setTweetMetrics(data.metrics)
+        if (data.error) {
+          setAutoResolveError(data.error)
+        } else {
+          load()
+        }
+      })
+      .catch(() => setAutoResolveError('Error de conexión al intentar auto-resolver.'))
+      .finally(() => setAutoResolving(false))
+  }, [market?.id, market?.status, market?.tweetId])
+
   const apostar = async () => {
     if (!user) { router.push('/login'); return }
     if (!pos) { setMsg({ t: 'err', v: 'Seleccioná SÍ o NO primero' }); return }
     setBetting(true); setMsg({ t: '', v: '' })
-    const res = await fetch(`/api/markets/${id}/bet`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ position: pos === 'si', amount }),
-    })
-    const data = await res.json()
-    if (!res.ok) { setMsg({ t: 'err', v: data.error }); setBetting(false); return }
-    setMsg({ t: 'ok', v: `✅ APUESTA REGISTRADA — ${amount} ◈ en ${pos === 'si' ? 'SÍ' : 'NO'}` })
-    setUser(u => ({ ...u, credits: data.newCredits }))
-    load(); setBetting(false)
+    try {
+      const res = await fetch(`/api/markets/${id}/bet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ position: pos === 'si', amount }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setMsg({ t: 'err', v: data.error }); return }
+      setMsg({ t: 'ok', v: `✅ APUESTA REGISTRADA — ${amount} ◈ en ${pos === 'si' ? 'SÍ' : 'NO'}` })
+      setUser(u => ({ ...u, credits: data.newCredits }))
+      load()
+    } catch {
+      setMsg({ t: 'err', v: 'Error de conexión. Intentá de nuevo.' })
+    } finally {
+      setBetting(false)
+    }
   }
 
   if (loading) return (
@@ -62,15 +97,44 @@ export default function MarketPage() {
   const yesP = total > 0 ? Math.round((market.totalYes / total) * 100) : 50
   const noP = 100 - yesP
   const isOpen = market.status === 'OPEN' && new Date() < new Date(market.deadline)
+  const isExpiredOpen = market.status === 'OPEN' && new Date() >= new Date(market.deadline)
   const payout = pos === 'si'
     ? Math.round(amount * (total + amount) / Math.max(market.totalYes + amount, 1))
     : Math.round(amount * (total + amount) / Math.max(market.totalNo + amount, 1))
+
+  const tweetUrlForDisplay = market.tweetUrl || (market.tweetId ? `https://x.com/i/web/status/${market.tweetId}` : null)
 
   return (
     <div style={{ maxWidth: '1140px', margin: '0 auto', padding: '32px 20px' }}>
       <Link href="/" style={{ fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted)', letterSpacing: '1px', display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '28px' }}>
         ← VOLVER A MERCADOS
       </Link>
+
+      {/* Auto-resolve status banner */}
+      {autoResolving && (
+        <div style={{
+          background: 'rgba(181,255,0,0.05)', border: '1px solid rgba(181,255,0,0.3)',
+          borderRadius: '10px', padding: '14px 18px', marginBottom: '16px',
+          display: 'flex', alignItems: 'center', gap: '12px',
+        }}>
+          <span style={{ fontFamily: 'JetBrains Mono', fontSize: '12px', color: 'var(--lime)', letterSpacing: '0.5px' }}>
+            ⏳ Verificando métricas en Twitter/X...
+          </span>
+        </div>
+      )}
+      {autoResolveError && !autoResolving && (
+        <div style={{
+          background: 'rgba(255,100,0,0.07)', border: '1px solid rgba(255,100,0,0.3)',
+          borderRadius: '10px', padding: '14px 18px', marginBottom: '16px',
+        }}>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: '11px', color: '#ff6600', marginBottom: '4px', fontWeight: 700 }}>
+            AUTO-RESOLUCIÓN NO DISPONIBLE
+          </div>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted)', lineHeight: 1.5 }}>
+            {autoResolveError}
+          </div>
+        </div>
+      )}
 
       <div className="market-layout">
 
@@ -83,7 +147,7 @@ export default function MarketPage() {
                 onError={e => { e.target.src = 'https://placehold.co/800x460/050505/1a1a1a?text=MEME' }} />
             </div>
             <div style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' }}>
                 {isOpen ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--lime-dim)', border: '1px solid rgba(181,255,0,0.3)', borderRadius: '5px', padding: '3px 10px' }}>
                     <span className="live-dot" />
@@ -97,11 +161,64 @@ export default function MarketPage() {
                   </div>
                 )}
                 <span style={{ fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted)' }}>@{market.meme.creator.username}</span>
+
+                {/* Tweet link */}
+                {tweetUrlForDisplay && (
+                  <a href={tweetUrlForDisplay} target="_blank" rel="noopener noreferrer" style={{
+                    fontFamily: 'JetBrains Mono', fontSize: '10px', color: '#1d9bf0',
+                    border: '1px solid rgba(29,155,240,0.3)', borderRadius: '5px', padding: '3px 9px',
+                    letterSpacing: '0.3px', display: 'flex', alignItems: 'center', gap: '5px',
+                  }}>
+                    𝕏 VER TWEET ↗
+                  </a>
+                )}
+
+                {/* Resolution method badge */}
+                {market.status === 'RESOLVED' && (
+                  <div style={{
+                    fontFamily: 'JetBrains Mono', fontSize: '9px', letterSpacing: '0.5px',
+                    padding: '3px 9px', borderRadius: '5px',
+                    background: market.resolvedBy === 'auto' ? 'rgba(29,155,240,0.1)' : 'rgba(255,214,10,0.1)',
+                    color: market.resolvedBy === 'auto' ? '#1d9bf0' : 'var(--gold)',
+                    border: `1px solid ${market.resolvedBy === 'auto' ? 'rgba(29,155,240,0.3)' : 'rgba(255,214,10,0.3)'}`,
+                  }}>
+                    {market.resolvedBy === 'auto' ? '🤖 AUTO VÍA TWITTER' : '👤 MANUAL'}
+                  </div>
+                )}
               </div>
               <h1 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '6px' }}>{market.meme.title}</h1>
               <p style={{ color: 'var(--muted)', fontSize: '14px', lineHeight: 1.5 }}>{market.question}</p>
             </div>
           </div>
+
+          {/* Tweet metrics panel — shown when auto-resolved or after auto-resolve attempt */}
+          {tweetMetrics && (
+            <div style={{ background: 'var(--surface)', border: '1px solid rgba(29,155,240,0.25)', borderRadius: '12px', padding: '20px' }}>
+              <div style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: '#1d9bf0', letterSpacing: '2px', marginBottom: '16px' }}>
+                𝕏 MÉTRICAS AL MOMENTO DE RESOLUCIÓN
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
+                {[
+                  { l: 'LIKES', v: tweetMetrics.likes.toLocaleString() },
+                  { l: 'RETWEETS', v: tweetMetrics.retweets.toLocaleString() },
+                  { l: 'REPLIES', v: tweetMetrics.replies.toLocaleString() },
+                  { l: 'QUOTES', v: tweetMetrics.quotes.toLocaleString() },
+                  { l: 'TOTAL INTERACCIONES', v: tweetMetrics.total.toLocaleString() },
+                ].map(m => (
+                  <div key={m.l} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ fontFamily: 'JetBrains Mono', fontSize: '16px', fontWeight: 700, color: '#1d9bf0', marginBottom: '4px' }}>{m.v}</div>
+                    <div style={{ fontFamily: 'JetBrains Mono', fontSize: '8px', color: 'var(--muted)', letterSpacing: '0.5px' }}>{m.l}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: '12px', fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted2)' }}>
+                Umbral: {market.threshold.toLocaleString()} interacciones —{' '}
+                <span style={{ color: tweetMetrics.total >= market.threshold ? 'var(--lime)' : 'var(--red)', fontWeight: 700 }}>
+                  {tweetMetrics.total >= market.threshold ? `✓ SUPERADO (${((tweetMetrics.total / market.threshold) * 100).toFixed(0)}%)` : `✗ NO ALCANZÓ (${((tweetMetrics.total / market.threshold) * 100).toFixed(0)}%)`}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
             <div className="section-head" style={{ color: 'var(--muted)', marginBottom: '20px' }}>ESTADO DEL MERCADO</div>
@@ -135,6 +252,9 @@ export default function MarketPage() {
             </div>
             <div style={{ marginTop: '12px', fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted2)' }}>
               🎯 Umbral: {market.threshold.toLocaleString()} interacciones en {market.platform}
+              {market.tweetId && (
+                <span style={{ marginLeft: '10px', color: '#1d9bf0' }}>· 🤖 Auto-resolución activa</span>
+              )}
             </div>
           </div>
 
@@ -159,17 +279,44 @@ export default function MarketPage() {
         {/* RIGHT — Bet panel */}
         <div className="market-bet-sticky">
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
-            {!isOpen ? (
+            {autoResolving ? (
+              <div style={{ padding: '40px 24px', textAlign: 'center' }}>
+                <div style={{ fontFamily: 'Bebas Neue', fontSize: '22px', letterSpacing: '2px', color: '#1d9bf0', marginBottom: '10px' }}>
+                  VERIFICANDO EN 𝕏
+                </div>
+                <p style={{ fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted)', letterSpacing: '0.5px', lineHeight: 1.6 }}>
+                  Consultando las métricas del tweet en Twitter API...
+                </p>
+              </div>
+            ) : !isOpen ? (
               <div style={{ padding: '40px 24px', textAlign: 'center' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>
-                  {market.status === 'RESOLVED' ? (market.result ? '✅' : '❌') : '⏰'}
+                  {market.status === 'RESOLVED' ? (market.result ? '✅' : '❌') : isExpiredOpen ? '⏳' : '⏰'}
                 </div>
                 <div style={{ fontFamily: 'Bebas Neue', fontSize: '28px', letterSpacing: '2px', color: '#fff', marginBottom: '8px' }}>
-                  {market.status === 'RESOLVED' ? `${market.result ? 'SÍ' : 'NO'} GANÓ` : 'MERCADO CERRADO'}
+                  {market.status === 'RESOLVED'
+                    ? `${market.result ? 'SÍ' : 'NO'} GANÓ`
+                    : isExpiredOpen ? 'RESOLVIENDO...' : 'MERCADO CERRADO'}
                 </div>
-                <p style={{ fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted)', letterSpacing: '0.5px' }}>
-                  {market.status === 'RESOLVED' ? 'Los ganadores fueron pagados' : 'Esperando resolución'}
+                <p style={{ fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted)', letterSpacing: '0.5px', lineHeight: 1.6 }}>
+                  {market.status === 'RESOLVED'
+                    ? `Los ganadores fueron pagados · ${market.resolvedBy === 'auto' ? 'Resuelto automáticamente vía Twitter' : 'Resuelto manualmente'}`
+                    : isExpiredOpen && market.tweetId
+                      ? 'Consultando Twitter API para auto-resolver...'
+                      : 'Esperando resolución manual'}
                 </p>
+                {/* Manual resolve fallback: shown when expired, has no tweetId or auto-resolve failed */}
+                {isExpiredOpen && autoResolveError && user && (
+                  <Link href="/dashboard" style={{
+                    display: 'inline-block', marginTop: '16px',
+                    fontFamily: 'JetBrains Mono', fontSize: '11px',
+                    background: 'var(--lime-dim)', color: 'var(--lime)',
+                    border: '1px solid rgba(181,255,0,0.4)', borderRadius: '8px',
+                    padding: '10px 18px', letterSpacing: '0.5px',
+                  }}>
+                    RESOLVER MANUALMENTE →
+                  </Link>
+                )}
               </div>
             ) : (
               <>

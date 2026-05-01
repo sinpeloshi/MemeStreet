@@ -32,19 +32,22 @@ model Meme {
 }
 
 model Market {
-  id        String       @id @default(cuid())
-  memeId    String       @unique
-  meme      Meme         @relation(fields: [memeId], references: [id])
-  question  String
-  threshold Int
-  platform  String
-  deadline  DateTime
-  status    MarketStatus @default(OPEN)
-  result    Boolean?
-  totalYes  Int          @default(0)
-  totalNo   Int          @default(0)
-  bets      Bet[]
-  createdAt DateTime     @default(now())
+  id         String       @id @default(cuid())
+  memeId     String       @unique
+  meme       Meme         @relation(fields: [memeId], references: [id])
+  question   String
+  threshold  Int
+  platform   String
+  deadline   DateTime
+  status     MarketStatus @default(OPEN)
+  result     Boolean?
+  resolvedBy String?
+  tweetUrl   String?
+  tweetId    String?
+  totalYes   Int          @default(0)
+  totalNo    Int          @default(0)
+  bets       Bet[]
+  createdAt  DateTime     @default(now())
 }
 
 enum MarketStatus {

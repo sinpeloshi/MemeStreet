@@ -31,7 +31,7 @@ export async function POST(request, { params }) {
     await prisma.$transaction(async (tx) => {
       await tx.market.update({
         where: { id: params.id },
-        data: { status: 'RESOLVED', result }
+        data: { status: 'RESOLVED', result, resolvedBy: 'manual' }
       })
       for (const bet of winningBets) {
         const payout = bet.amount + Math.floor(

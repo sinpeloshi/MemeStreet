@@ -206,19 +206,15 @@ function ResolveModal({ market, onClose, onResolve, loading }) {
   )
 }
 
-// ── Buy credits modal (funcional) ─────────────────────────────────────────────
+// ── Buy credits modal (crypto-only) ──────────────────────────────────────────
 function BuyCreditsModal({ onClose }) {
-  const [tab, setTab] = useState('mp')
   const [loadingPack, setLoadingPack] = useState(null)
   const [err, setErr] = useState('')
 
   const pagar = async (packId) => {
     setLoadingPack(packId); setErr('')
     try {
-      const endpoint = tab === 'mp'
-        ? '/api/payments/mp/create'
-        : '/api/payments/crypto/create'
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/payments/crypto/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ packId }),
@@ -235,19 +231,6 @@ function BuyCreditsModal({ onClose }) {
       setLoadingPack(null)
     }
   }
-
-  const tabBtn = (id, label) => (
-    <button onClick={() => setTab(id)} style={{
-      flex: 1, padding: '10px', border: 'none',
-      background: tab === id ? 'var(--surface)' : 'transparent',
-      color: tab === id ? '#fff' : 'var(--muted)',
-      fontFamily: 'JetBrains Mono', fontSize: '11px', fontWeight: 700,
-      letterSpacing: '0.5px', cursor: 'crosshair', borderRadius: '6px',
-      transition: 'all 0.15s',
-    }}>
-      {label}
-    </button>
-  )
 
   return (
     <div style={{
@@ -266,30 +249,12 @@ function BuyCreditsModal({ onClose }) {
         <h2 style={{ fontFamily: 'Bebas Neue', fontSize: '34px', letterSpacing: '2px', marginBottom: '4px' }}>
           CARGÁ TU CUENTA
         </h2>
-        <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '20px' }}>
+        <p style={{ color: 'var(--muted)', fontSize: '13px', marginBottom: '6px' }}>
           Los créditos nunca expiran. 2% de fee del mercado vuelve al pozo.
         </p>
-
-        {/* Tabs */}
-        <div style={{
-          display: 'flex', background: 'var(--surface2)',
-          border: '1px solid var(--border)', borderRadius: '8px',
-          padding: '4px', marginBottom: '20px', gap: '4px',
-        }}>
-          {tabBtn('mp', '💳 MercadoPago')}
-          {tabBtn('crypto', '🔐 Crypto (USDT/USDC)')}
-        </div>
-
-        {tab === 'mp' && (
-          <p style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: 'var(--muted)', marginBottom: '14px', lineHeight: 1.6 }}>
-            Pagá con tarjeta de débito, crédito o transferencia en Argentina, México, Brasil, Colombia, Chile y 13 países más.
-          </p>
-        )}
-        {tab === 'crypto' && (
-          <p style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: 'var(--muted)', marginBottom: '14px', lineHeight: 1.6 }}>
-            USDT, USDC, BTC, ETH y 300+ monedas. Sin fronteras. Confirmación en ~10 minutos.
-          </p>
-        )}
+        <p style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: 'var(--muted)', marginBottom: '20px', lineHeight: 1.6 }}>
+          🔐 USDT, USDC, BTC, ETH y 300+ monedas · Sin fronteras · Confirmación en ~10 minutos
+        </p>
 
         {err && (
           <div style={{
