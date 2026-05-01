@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
+import MemeCardImg from '@/components/MemeCardImg'
 
 export const revalidate = 0
 
@@ -22,12 +23,7 @@ function MemeCard({ market }) {
   return (
     <Link href={`/market/${market.id}`} className="mcard">
       <div style={{ height: '190px', background: '#080808', overflow: 'hidden', position: 'relative' }}>
-        <img
-          src={market.meme.imageUrl}
-          alt={market.meme.title}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          onError={e => { e.target.src = 'https://placehold.co/400x200/0a0a0a/1a1a1a?text=MEME' }}
-        />
+        <MemeCardImg src={market.meme.imageUrl} alt={market.meme.title} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)' }} />
         <div style={{ position: 'absolute', top: 10, left: 10 }}>
           {isLive && (
