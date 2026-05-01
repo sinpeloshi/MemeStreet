@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CREDIT_PACKS } from '@/lib/packs'
@@ -347,7 +347,7 @@ function Empty({ text, cta }) {
 }
 
 // ── Main dashboard ────────────────────────────────────────────────────────────
-export default function Dashboard() {
+function DashboardInner() {
   const [data, setData] = useState(null)
   const [tab, setTab] = useState('apuestas')
   const [resolveTarget, setResolveTarget] = useState(null)
@@ -565,5 +565,19 @@ export default function Dashboard() {
       {showBuy && <BuyCreditsModal onClose={() => setShowBuy(false)} />}
 
     </div>
+  )
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={
+      <div style={{ textAlign: 'center', padding: '100px 20px' }}>
+        <div style={{ fontFamily: 'Bebas Neue', fontSize: '28px', letterSpacing: '4px', color: 'var(--lime)' }}>
+          CARGANDO...
+        </div>
+      </div>
+    }>
+      <DashboardInner />
+    </Suspense>
   )
 }
