@@ -27,3 +27,25 @@ export async function getTweetMetrics(tweetId) {
     return null
   }
 }
+
+export async function getTweetDetails(tweetId) {
+  const token = process.env.TWITTER_BEARER_TOKEN
+  if (!token) return null
+  try {
+    const res = await fetch(
+      `https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=text,public_metrics&expansions=attachments.media_keys&media.fields=url,preview_image_url`,
+      { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }
+    )
+    if (!res.ok) return null
+    const json = await res.json()
+    const tweet = json.data
+    const media = json.includes?.media?.[0]
+    return {
+      text: tweet?.text || '',
+      imageUrl: media?.url || media?.preview_image_url || null,
+    }
+  } catch {
+    return null
+  }
+}
+
