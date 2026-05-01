@@ -11,14 +11,20 @@ export default function RegistroPage() {
 
   const submit = async () => {
     setLoading(true); setError('')
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    const data = await res.json()
-    if (!res.ok) { setError(data.error); setLoading(false); return }
-    router.push('/'); router.refresh()
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error || 'Error al registrarse'); return }
+      router.push('/'); router.refresh()
+    } catch {
+      setError('Error de conexión. Intentá de nuevo.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
