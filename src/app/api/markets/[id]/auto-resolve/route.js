@@ -20,7 +20,8 @@ export async function POST(request, { params }) {
     if (!metrics)
       return NextResponse.json({ error: 'No se pudieron obtener las métricas de Twitter. Intentá de nuevo o resolvé manualmente.' }, { status: 503 })
 
-    const result = metrics.total >= market.threshold
+    const metricValue = metrics[market.metric] ?? metrics.total
+    const result = metricValue >= market.threshold
 
     const winningBets = market.bets.filter(b => b.position === result)
     const losingPool = market.bets.filter(b => b.position !== result).reduce((s, b) => s + b.amount, 0)
@@ -40,7 +41,7 @@ export async function POST(request, { params }) {
       }
     })
 
-    return NextResponse.json({ ok: true, resolved: true, result, metrics, winners: winningBets.length, fee })
+    return NextResponse.json({ ok: true, resolved: true, result, metrics, metricValue, winners: winningBets.length, fee })
   } catch (e) {
     console.error('Auto-resolve error:', e)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })

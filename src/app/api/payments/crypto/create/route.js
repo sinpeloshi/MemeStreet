@@ -6,6 +6,10 @@ export async function POST(request) {
   const auth = getAuthUser()
   if (!auth) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
+  if (!process.env.NOWPAYMENTS_API_KEY) {
+    return NextResponse.json({ error: 'Pagos crypto no configurados aún. Contactá al administrador.' }, { status: 503 })
+  }
+
   try {
     const { packId } = await request.json()
     const pack = CREDIT_PACKS.find(p => p.id === packId)

@@ -37,6 +37,7 @@ model Market {
   meme       Meme         @relation(fields: [memeId], references: [id])
   question   String
   threshold  Int
+  metric     String       @default("total")
   platform   String
   deadline   DateTime
   status     MarketStatus @default(OPEN)

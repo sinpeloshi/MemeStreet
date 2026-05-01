@@ -3,6 +3,14 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
+const METRIC_LABELS = {
+  total: 'ENGAGEMENT TOTAL',
+  likes: 'LIKES',
+  retweets: 'RETWEETS',
+  replies: 'RESPUESTAS',
+  impressions: 'IMPRESIONES',
+}
+
 function tiempoRestante(d) {
   const ms = new Date(d) - new Date()
   if (ms <= 0) return 'EXPIRADO'
@@ -197,26 +205,46 @@ export default function MarketPage() {
               <div style={{ fontFamily: 'JetBrains Mono', fontSize: '10px', color: '#1d9bf0', letterSpacing: '2px', marginBottom: '16px' }}>
                 𝕏 MÉTRICAS AL MOMENTO DE RESOLUCIÓN
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
-                {[
-                  { l: 'LIKES', v: tweetMetrics.likes.toLocaleString() },
-                  { l: 'RETWEETS', v: tweetMetrics.retweets.toLocaleString() },
-                  { l: 'REPLIES', v: tweetMetrics.replies.toLocaleString() },
-                  { l: 'QUOTES', v: tweetMetrics.quotes.toLocaleString() },
-                  { l: 'TOTAL INTERACCIONES', v: tweetMetrics.total.toLocaleString() },
-                ].map(m => (
-                  <div key={m.l} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
-                    <div style={{ fontFamily: 'JetBrains Mono', fontSize: '16px', fontWeight: 700, color: '#1d9bf0', marginBottom: '4px' }}>{m.v}</div>
-                    <div style={{ fontFamily: 'JetBrains Mono', fontSize: '8px', color: 'var(--muted)', letterSpacing: '0.5px' }}>{m.l}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: '12px', fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted2)' }}>
-                Umbral: {market.threshold.toLocaleString()} interacciones —{' '}
-                <span style={{ color: tweetMetrics.total >= market.threshold ? 'var(--lime)' : 'var(--red)', fontWeight: 700 }}>
-                  {tweetMetrics.total >= market.threshold ? `✓ SUPERADO (${((tweetMetrics.total / market.threshold) * 100).toFixed(0)}%)` : `✗ NO ALCANZÓ (${((tweetMetrics.total / market.threshold) * 100).toFixed(0)}%)`}
-                </span>
-              </div>
+              {(() => {
+                const metricKey = market.metric || 'total'
+                const metricVal = tweetMetrics[metricKey] ?? tweetMetrics.total
+                const rows = [
+                  { k: 'likes', l: 'LIKES', v: tweetMetrics.likes },
+                  { k: 'retweets', l: 'RETWEETS', v: tweetMetrics.retweets },
+                  { k: 'replies', l: 'RESPUESTAS', v: tweetMetrics.replies },
+                  { k: 'quotes', l: 'QUOTES', v: tweetMetrics.quotes },
+                  { k: 'total', l: 'TOTAL', v: tweetMetrics.total },
+                ]
+                return (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '10px' }}>
+                      {rows.map(m => {
+                        const isTracked = m.k === metricKey
+                        return (
+                          <div key={m.l} style={{
+                            background: isTracked ? 'rgba(29,155,240,0.12)' : 'var(--surface2)',
+                            border: `1px solid ${isTracked ? 'rgba(29,155,240,0.5)' : 'var(--border)'}`,
+                            borderRadius: '8px', padding: '12px', textAlign: 'center',
+                          }}>
+                            <div style={{ fontFamily: 'JetBrains Mono', fontSize: '16px', fontWeight: 700, color: isTracked ? '#1d9bf0' : 'var(--muted)', marginBottom: '4px' }}>{m.v.toLocaleString()}</div>
+                            <div style={{ fontFamily: 'JetBrains Mono', fontSize: '8px', color: isTracked ? '#1d9bf0' : 'var(--muted)', letterSpacing: '0.5px' }}>
+                              {m.l}{isTracked && ' ◄'}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div style={{ marginTop: '12px', fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted2)' }}>
+                      Umbral: {market.threshold.toLocaleString()} {METRIC_LABELS[metricKey] || 'INTERACCIONES'} —{' '}
+                      <span style={{ color: metricVal >= market.threshold ? 'var(--lime)' : 'var(--red)', fontWeight: 700 }}>
+                        {metricVal >= market.threshold
+                          ? `✓ SUPERADO (${((metricVal / market.threshold) * 100).toFixed(0)}%)`
+                          : `✗ NO ALCANZÓ (${((metricVal / market.threshold) * 100).toFixed(0)}%)`}
+                      </span>
+                    </div>
+                  </>
+                )
+              })()}
             </div>
           )}
 
@@ -251,7 +279,7 @@ export default function MarketPage() {
               ))}
             </div>
             <div style={{ marginTop: '12px', fontFamily: 'JetBrains Mono', fontSize: '11px', color: 'var(--muted2)' }}>
-              🎯 Umbral: {market.threshold.toLocaleString()} interacciones en {market.platform}
+              🎯 Umbral: {market.threshold.toLocaleString()} {METRIC_LABELS[market.metric] || 'INTERACCIONES'} en {market.platform.toUpperCase()}
               {market.tweetId && (
                 <span style={{ marginLeft: '10px', color: '#1d9bf0' }}>· 🤖 Auto-resolución activa</span>
               )}

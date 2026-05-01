@@ -11,7 +11,7 @@ function extractTweetIdClient(url) {
 export default function CrearPage() {
   const [form, setForm] = useState({
     tweetUrl: '', title: '', imageUrl: '', tags: '',
-    question: '', threshold: '', platform: 'twitter', deadline: '',
+    question: '', threshold: '', platform: 'twitter', metric: 'total', deadline: '',
   })
   const [preview, setPreview] = useState(false)
   const [fetchingTweet, setFetchingTweet] = useState(false)
@@ -177,9 +177,19 @@ export default function CrearPage() {
               </select>
             </div>
             <div>
-              <label className="field-label">UMBRAL (interacciones)</label>
-              <input type="number" value={form.threshold} onChange={e => setForm({ ...form, threshold: e.target.value })} placeholder="100000" className="inp" />
+              <label className="field-label">MÉTRICA A MEDIR</label>
+              <select value={form.metric} onChange={e => setForm({ ...form, metric: e.target.value })} className="inp">
+                <option value="total">📊 Engagement total</option>
+                <option value="likes">❤️ Likes</option>
+                <option value="retweets">🔁 Retweets / Reposts</option>
+                <option value="replies">💬 Respuestas</option>
+                <option value="impressions">👁 Impresiones</option>
+              </select>
             </div>
+          </div>
+          <div>
+            <label className="field-label">UMBRAL — cantidad de <span style={{ color: 'var(--lime)' }}>{({ total: 'interacciones totales', likes: 'likes', retweets: 'retweets', replies: 'respuestas', impressions: 'impresiones' })[form.metric]}</span> para que el SÍ gane</label>
+            <input type="number" value={form.threshold} onChange={e => setForm({ ...form, threshold: e.target.value })} placeholder="100000" className="inp" />
           </div>
           <div>
             <label className="field-label">FECHA LÍMITE</label>

@@ -17,7 +17,7 @@ export async function POST(request) {
   if (!auth) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
 
   try {
-    const { title, imageUrl, tags, question, threshold, platform, deadline, tweetUrl } = await request.json()
+    const { title, imageUrl, tags, question, threshold, platform, deadline, tweetUrl, metric } = await request.json()
     if (!title || !imageUrl || !question || !threshold || !platform || !deadline)
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
 
@@ -55,6 +55,7 @@ export async function POST(request) {
               deadline: new Date(deadline),
               tweetUrl: tweetUrl || null,
               tweetId: tweetId || null,
+              metric: metric || 'total',
             }
           }
         },
